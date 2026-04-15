@@ -1500,7 +1500,11 @@ style="position: absolute; top: 10px; right: 10px; width: 150px; height: auto; z
     mostrarAlerta("Error al generar PDF: " + (error.message || error), "error");
   }
 }
-
+function normalizarRUT(rut) {
+  if (!rut) return "";
+  // Convierte a texto, elimina todo lo que no sea número o letra K, y pasa a mayúscula
+  return String(rut).replace(/[^0-9kK]/g, "").toUpperCase();
+}
     
 
 
