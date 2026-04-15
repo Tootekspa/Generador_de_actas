@@ -1505,6 +1505,11 @@ function normalizarRUT(rut) {
   // Convierte a texto, elimina todo lo que no sea número o letra K, y pasa a mayúscula
   return String(rut).replace(/[^0-9kK]/g, "").toUpperCase();
 }
+	function obtenerRUT(fila) {
+  if (!fila) return "";
+  // Busca el RUT en la fila del Excel contemplando distintas formas en las que puede estar escrito el encabezado
+  return fila["RUT"] || fila["Rut"] || fila["rut"] || fila["R.U.T."] || "";
+}
     
 
 
