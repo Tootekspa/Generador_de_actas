@@ -692,6 +692,9 @@
       mostrarAlerta("Por favor selecciona ambos archivos (Personal y Vehículos).", "error");
       return;
     }
+// =========================
+// CARGA DESDE REPO (AFUERA)
+// =========================
 async function cargarArchivosDesdeRepo() {
   try {
     mostrarAlerta("Cargando archivos desde el repositorio...", "info");
@@ -713,40 +716,25 @@ async function cargarArchivosDesdeRepo() {
       resVehiculos.arrayBuffer()
     ]);
 
-    // PERSONAL
     const wbPersonal = XLSX.read(new Uint8Array(bufferPersonal), { type: "array", cellDates: true });
     const wsPersonal = wbPersonal.Sheets[wbPersonal.SheetNames[0]];
-    let rawPersonal = XLSX.utils.sheet_to_json(wsPersonal, { defval: "", raw: false });
+    dataPersonal = XLSX.utils.sheet_to_json(wsPersonal, { defval: "" });
 
-    rawPersonal = rawPersonal.filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-    rawPersonal.forEach(row => {
-      if (row["Fecha nacimiento"]) row["Fecha nacimiento"] = convertirFechaExcel(row["Fecha nacimiento"]);
-      if (row["Fecha de Ingreso"]) row["Fecha de Ingreso"] = convertirFechaExcel(row["Fecha de Ingreso"]);
-      if (row["Fecha Ingreso"]) row["Fecha Ingreso"] = convertirFechaExcel(row["Fecha Ingreso"]);
-    });
-
-    dataPersonal = rawPersonal;
-
-    // VEHICULOS
     const wbVehiculos = XLSX.read(new Uint8Array(bufferVehiculos), { type: "array" });
     const wsVehiculos = wbVehiculos.Sheets[wbVehiculos.SheetNames[0]];
-    let rawVehiculos = XLSX.utils.sheet_to_json(wsVehiculos, { defval: "", raw: false });
+    dataVehiculos = XLSX.utils.sheet_to_json(wsVehiculos, { defval: "" });
 
-    rawVehiculos = rawVehiculos.filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-    dataVehiculos = rawVehiculos;
-
-    // UI
     document.getElementById("countPersonal").textContent = dataPersonal.length;
     document.getElementById("countVehiculos").textContent = dataVehiculos.length;
 
     llenarSelectsRUT();
     llenarSelectPatentes();
 
-    mostrarAlerta("Archivos cargados automáticamente desde el repo.", "success");
+    mostrarAlerta("Archivos cargados automáticamente.", "success");
 
   } catch (error) {
     console.error(error);
-    mostrarAlerta("Error al cargar archivos desde /data. Verifica que existan.", "error");
+    mostrarAlerta("Error cargando archivos automáticos.", "error");
   }
 }
 
