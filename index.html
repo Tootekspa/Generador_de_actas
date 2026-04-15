@@ -538,177 +538,53 @@
   </div>
 
 <script>
-  // =========================
-  // VARIABLES GLOBALES
-  // =========================
-  let dataPersonal = [];
-  let dataVehiculos = [];
-  let currentPreviewType = null;
+// =========================
+// VARIABLES GLOBALES
+// =========================
+let dataPersonal = [];
+let dataVehiculos = [];
+let currentPreviewType = null;
 
-  // Inicializar fechas al cargar la página
- window.onload = function() {
+// =========================
+// INICIO APP (MODO INTELIGENTE)
+// =========================
+window.onload = function() {
   const hoy = new Date().toISOString().split('T')[0];
   document.getElementById('fechaUniforme').value = hoy;
   document.getElementById('fechaEquipos').value = hoy;
   document.getElementById('fechaVehiculo').value = hoy;
 
-  // 🔥 NUEVO: carga automática desde repo
+  // 🔥 carga automática
   cargarArchivosDesdeRepo();
 };
 
-  // =========================
-  // ALERTAS
-  // =========================
-  function mostrarAlerta(mensaje, tipo = "info") {
-    const alertDiv = document.getElementById("alertInfo");
-    alertDiv.innerHTML = mensaje;
-    alertDiv.className = "alert show " + (tipo === "success" ? "alert-success" : tipo === "error" ? "alert-error" : "alert-info");
-    
-    // Ocultar alerta después de 5 segundos
-    setTimeout(() => {
-        alertDiv.classList.remove("show");
-    }, 5000);
-  }
-
-  // =========================
-  // RUT
-  // =========================
-  function normalizarRUT(rut) {
-    if (!rut) return "";
-    return String(rut).replace(/\./g, "").replace(/-/g, "").trim().toUpperCase();
-  }
-
-  function formatearRUT(rut) {
-    if (!rut) return "";
-    const rutLimpio = normalizarRUT(rut);
-    if (rutLimpio.length < 2) return rutLimpio;
-
-    const dv = rutLimpio.slice(-1);
-    const numero = rutLimpio.slice(0, -1);
-    const numeroFormateado = numero.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return numeroFormateado + "-" + dv;
-  }
-
-  // =========================
-  // FECHAS EXCEL
-  // =========================
-  function convertirFechaExcel(valor) {
-    if (!valor) return "";
-
-    if (valor instanceof Date) return valor;
-
-    if (typeof valor === "number" || (typeof valor === "string" && !isNaN(Number(valor)) && valor.trim() !== "")) {
-        const valorNum = Number(valor);
-        if (valorNum > 10000) {
-            const diasDesde1900 = valorNum - 1;
-            const milisegundos = diasDesde1900 * 24 * 60 * 60 * 1000;
-            const fecha = new Date(1900, 0, 1);
-            fecha.setTime(fecha.getTime() + milisegundos);
-            return fecha;
-        }
-    }
-
-    if (typeof valor === "string") {
-        const parts = valor.split(/[-/]/);
-        if (parts.length === 3) {
-            let d, m, y;
-            if (parts[0].length === 4) { 
-                y = parseInt(parts[0]);
-                m = parseInt(parts[1]) - 1;
-                d = parseInt(parts[2]);
-            } else { 
-                y = parseInt(parts[2]);
-                if (y < 100) y += 2000; 
-
-                if (parseInt(parts[1]) > 12) {
-                    m = parseInt(parts[0]) - 1; 
-                    d = parseInt(parts[1]);
-                } else {
-                    m = parseInt(parts[1]) - 1; 
-                    d = parseInt(parts[0]);
-                }
-            }
-            if (y !== undefined && !isNaN(y) && !isNaN(m) && !isNaN(d)) {
-                return new Date(y, m, d);
-            }
-        }
-        const fallbackDate = new Date(valor);
-        if (!isNaN(fallbackDate.getTime())) return fallbackDate;
-
-        const fallbackDate2 = new Date(valor + "T00:00:00");
-        if (!isNaN(fallbackDate2.getTime())) return fallbackDate2;
-    }
-
-    return String(valor);
-  }
-
-  function formatearFecha(fecha) {
-    if (!fecha) return "";
-    const f = convertirFechaExcel(fecha);
-
-    if (!(f instanceof Date) || isNaN(f.getTime())) return "";
-
-    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-    return `${f.getDate()} de ${meses[f.getMonth()]} de ${f.getFullYear()}`;
-  }
-
-  // UTILIDADES DATA PERSONAL
-  // =========================
-  function encontrarColumnaRUT(obj) {
-    const posibles = ["RUT","Rut","rut","RUN","Run","run","CI","ci","Cédula","Cedula","RUT (sin puntos)","Rut (sin puntos)","rut (sin puntos)"];
-    for (const nombre of posibles) {
-      if (Object.prototype.hasOwnProperty.call(obj, nombre)) return nombre;
-    }
-    for (const k in obj) {
-      const kl = String(k).toLowerCase();
-      if (kl.includes("rut") || kl.includes("run") || kl.includes("ci")) return k;
-    }
-    return null;
-  }
-
-  function obtenerRUT(persona) {
-    const col = encontrarColumnaRUT(persona || {});
-    return col ? persona[col] : "";
-  }
-
-  function obtenerNombre(persona) {
-    if (!persona) return "";
-    return persona["Nombre Completo"] || persona["Nombre"] || persona["NOMBRE"] || persona["nombre"] || "";
-  }
-
-  function obtenerCargo(persona) {
-    if (!persona) return "";
-    return persona["Cargo"] || persona["CARGO"] || persona["cargo"] || "";
-  }
-
-  // =========================
-  // CARGA ARCHIVOS
-  // =========================
-  function cargarArchivos() {
-    const filePersonal = document.getElementById("filePersonal").files[0];
-    const fileVehiculos = document.getElementById("fileVehiculos").files[0];
-
-    if (!filePersonal || !fileVehiculos) {
-      mostrarAlerta("Por favor selecciona ambos archivos (Personal y Vehículos).", "error");
-      return;
-    }
 // =========================
-// CARGA DESDE REPO (AFUERA)
+// ALERTAS
+// =========================
+function mostrarAlerta(mensaje, tipo = "info") {
+  const alertDiv = document.getElementById("alertInfo");
+  alertDiv.innerHTML = mensaje;
+  alertDiv.className = "alert show " + (tipo === "success" ? "alert-success" : tipo === "error" ? "alert-error" : "alert-info");
+
+  setTimeout(() => {
+    alertDiv.classList.remove("show");
+  }, 5000);
+}
+
+// =========================
+// CARGA DESDE REPO (GLOBAL ✅)
 // =========================
 async function cargarArchivosDesdeRepo() {
   try {
-    mostrarAlerta("Cargando archivos desde el repositorio...", "info");
-
-    const urlPersonal = "data/personal.xlsx";
-    const urlVehiculos = "data/vehiculos.xlsx";
+    mostrarAlerta("Cargando datos automáticamente...", "info");
 
     const [resPersonal, resVehiculos] = await Promise.all([
-      fetch(urlPersonal),
-      fetch(urlVehiculos)
+      fetch("data/personal.xlsx"),
+      fetch("data/vehiculos.xlsx")
     ]);
 
     if (!resPersonal.ok || !resVehiculos.ok) {
-      throw new Error("No se encontraron los archivos en /data");
+      throw new Error("Archivos no encontrados");
     }
 
     const [bufferPersonal, bufferVehiculos] = await Promise.all([
@@ -716,10 +592,12 @@ async function cargarArchivosDesdeRepo() {
       resVehiculos.arrayBuffer()
     ]);
 
+    // PERSONAL
     const wbPersonal = XLSX.read(new Uint8Array(bufferPersonal), { type: "array", cellDates: true });
     const wsPersonal = wbPersonal.Sheets[wbPersonal.SheetNames[0]];
     dataPersonal = XLSX.utils.sheet_to_json(wsPersonal, { defval: "" });
 
+    // VEHICULOS
     const wbVehiculos = XLSX.read(new Uint8Array(bufferVehiculos), { type: "array" });
     const wsVehiculos = wbVehiculos.Sheets[wbVehiculos.SheetNames[0]];
     dataVehiculos = XLSX.utils.sheet_to_json(wsVehiculos, { defval: "" });
@@ -730,99 +608,95 @@ async function cargarArchivosDesdeRepo() {
     llenarSelectsRUT();
     llenarSelectPatentes();
 
-    mostrarAlerta("Archivos cargados automáticamente.", "success");
+    mostrarAlerta("Datos cargados automáticamente.", "success");
 
   } catch (error) {
-    console.error(error);
-    mostrarAlerta("Error cargando archivos automáticos.", "error");
+    console.warn(error);
+    activarModoManual();
   }
 }
 
-    mostrarAlerta("Cargando archivos... espera un momento.", "info");
+// =========================
+// FALLBACK MANUAL
+// =========================
+function activarModoManual() {
+  mostrarAlerta("Carga automática falló. Usa carga manual.", "error");
 
-    const readerPersonal = new FileReader();
-    const readerVehiculos = new FileReader();
+  document.getElementById("filePersonal").style.display = "block";
+  document.getElementById("fileVehiculos").style.display = "block";
+}
 
-    readerPersonal.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array", cellDates: true, raw: false });
-        const ws = workbook.Sheets[workbook.SheetNames[0]];
-        let rawData = XLSX.utils.sheet_to_json(ws, { defval: "", blankrows: false, raw: false });
+// =========================
+// CARGA MANUAL (SE MANTIENE)
+// =========================
+function cargarArchivos() {
+  const filePersonal = document.getElementById("filePersonal").files[0];
+  const fileVehiculos = document.getElementById("fileVehiculos").files[0];
 
-        // Normaliza posibles columnas de fecha (si existen)
-        rawData = rawData.filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-        rawData.forEach(row => {
-          if (row["Fecha nacimiento"]) row["Fecha nacimiento"] = convertirFechaExcel(row["Fecha nacimiento"]);
-          if (row["Fecha de Ingreso"]) row["Fecha de Ingreso"] = convertirFechaExcel(row["Fecha de Ingreso"]);
-          if (row["Fecha Ingreso"]) row["Fecha Ingreso"] = convertirFechaExcel(row["Fecha Ingreso"]);
-        });
-
-        dataPersonal = rawData;
-        document.getElementById("countPersonal").textContent = dataPersonal.length;
-        llenarSelectsRUT();
-        mostrarAlerta(`Personal cargado: ${dataPersonal.length} registros.`, "success");
-      } catch (err) {
-        console.error(err);
-        mostrarAlerta("Error al leer archivo de Personal: " + (err.message || err), "error");
-      }
-    };
-
-    readerVehiculos.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array", raw: false });
-        const ws = workbook.Sheets[workbook.SheetNames[0]];
-        let rawData = XLSX.utils.sheet_to_json(ws, { defval: "", blankrows: false, raw: false });
-
-        rawData = rawData.filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-        dataVehiculos = rawData;
-
-        document.getElementById("countVehiculos").textContent = dataVehiculos.length;
-        llenarSelectPatentes();
-        mostrarAlerta(`Vehículos cargados: ${dataVehiculos.length} registros.`, "success");
-      } catch (err) {
-        console.error(err);
-        mostrarAlerta("Error al leer archivo de Vehículos: " + (err.message || err), "error");
-      }
-    };
-
-    readerPersonal.readAsArrayBuffer(filePersonal);
-    readerVehiculos.readAsArrayBuffer(fileVehiculos);
+  if (!filePersonal || !fileVehiculos) {
+    mostrarAlerta("Selecciona ambos archivos.", "error");
+    return;
   }
 
-  function llenarSelectsRUT() {
-    const selectIds = ["rutUniforme", "rutEquipos", "rutVehiculo"];
-    selectIds.forEach(id => {
-      const sel = document.getElementById(id);
-      sel.innerHTML = `<option value="">-- Selecciona un trabajador --</option>`;
-      dataPersonal.forEach(persona => {
-        const rut = obtenerRUT(persona);
-        if (!rut) return;
-        const option = document.createElement("option");
-        const nombre = obtenerNombre(persona);
-        const cargo = obtenerCargo(persona) ? " - " + obtenerCargo(persona) : "";
-        option.value = rut;
-        option.textContent = `${formatearRUT(rut)} - ${nombre}${cargo}`;
-        sel.appendChild(option);
-      });
-    });
-  }
+  const readerPersonal = new FileReader();
+  const readerVehiculos = new FileReader();
 
-  function llenarSelectPatentes() {
-    const sel = document.getElementById("patenteVehiculo");
-    sel.innerHTML = `<option value="">-- Selecciona un vehículo --</option>`;
-    dataVehiculos.forEach(v => {
-      const pat = (v.Patente || v.PATENTE || v.patente || "").toString().trim();
-      if (!pat) return;
+  readerPersonal.onload = (e) => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    dataPersonal = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+    document.getElementById("countPersonal").textContent = dataPersonal.length;
+    llenarSelectsRUT();
+  };
+
+  readerVehiculos.onload = (e) => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    dataVehiculos = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+    document.getElementById("countVehiculos").textContent = dataVehiculos.length;
+    llenarSelectPatentes();
+  };
+
+  readerPersonal.readAsArrayBuffer(filePersonal);
+  readerVehiculos.readAsArrayBuffer(fileVehiculos);
+}
+
+// =========================
+// SELECTS
+// =========================
+function llenarSelectsRUT() {
+  const selects = ["rutUniforme", "rutEquipos", "rutVehiculo"];
+
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = `<option value="">-- Selecciona --</option>`;
+
+    dataPersonal.forEach(p => {
       const option = document.createElement("option");
-      const marca = (v.Marca || v.MARCA || v.marca || "").toString();
-      const modelo = (v.Modelo || v.MODELO || v.modelo || "").toString();
-      option.value = pat;
-      option.textContent = `${pat.toUpperCase()} - ${marca} ${modelo}`.trim();
+      option.value = p["RUT"] || "";
+      option.textContent = p["Nombre Completo"] || "";
       sel.appendChild(option);
     });
-  }
+  });
+}
+
+function llenarSelectPatentes() {
+  const sel = document.getElementById("patenteVehiculo");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">-- Selecciona --</option>`;
+
+  dataVehiculos.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v["Patente"] || "";
+    option.textContent = v["Patente"] || "";
+    sel.appendChild(option);
+  });
+}
+</script>
+
 
   // =========================
   // BUSQUEDAS
