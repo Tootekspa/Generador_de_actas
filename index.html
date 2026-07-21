@@ -485,6 +485,7 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="cambiarTab('uniforme', event)">Acta Uniforme</button>
       <button class="tab-btn" onclick="cambiarTab('equipos', event)">Acta Equipos</button>
+      <button class="tab-btn" onclick="cambiarTab('recepcionEquipos', event)">Recepción Equipos</button>
       <button class="tab-btn" onclick="cambiarTab('vehiculo', event)">Anexo Vehículo</button>
     </div>
 
@@ -618,6 +619,76 @@
 
         <div class="btn-group">
           <button class="btn btn-primary" onclick="previewEquipos()">Vista Previa</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TAB 2B: RECEPCION DE EQUIPOS -->
+    <div id="tab-recepcionEquipos" class="tab-content">
+      <div class="card">
+        <h2 style="margin-bottom: 1rem;">Acta de Recepción de Equipos de Trabajo</h2>
+
+        <div class="row">
+          <div>
+            <label>RUT Trabajador (selecciona de la lista)</label>
+            <div class="select-wrapper">
+              <select id="rutRecepcionEquipos" onchange="buscarPersonalRecepcionEquipos()">
+                <option value="">-- Selecciona un trabajador --</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label>Fecha de Recepción</label>
+            <input type="date" id="fechaRecepcionEquipos" />
+          </div>
+        </div>
+
+        <div id="resultadoRecepcionEquipos" class="search-result hidden"></div>
+
+        <h3 style="margin-top: 1.2rem;">Equipos Recibidos</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35%;">Tipo de Equipo</th>
+              <th style="width: 45%;">Serie / Detalle</th>
+              <th style="width: 20%;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tableRecepcionEquipos">
+            <tr>
+              <td>
+                <select class="table-input">
+                  <option value="">Seleccionar...</option>
+                  <option value="Computador">Computador</option>
+                  <option value="Teléfono">Teléfono</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </td>
+              <td><input type="text" class="table-input" placeholder="Número de serie o detalle"/></td>
+              <td><button class="btn btn-danger btn-small" onclick="eliminarFilaRecepcionEquipos(this)">Eliminar</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <button class="btn btn-secondary" onclick="agregarFilaRecepcionEquipos()">Agregar Equipo</button>
+
+        <div class="row full" style="margin-top: 1rem;">
+          <div>
+            <label>Observaciones</label>
+            <textarea
+              id="observacionesRecepcionEquipos"
+              rows="5"
+              placeholder="Detalle del estado de los equipos al momento de la recepción, daños, accesorios faltantes u otras observaciones relevantes..."
+              style="resize: vertical; min-height: 100px;"
+            ></textarea>
+            <small style="color: var(--color-text-secondary);">Este campo es opcional. Las observaciones aparecerán en el acta generada.</small>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="previewRecepcionEquipos()">Vista Previa</button>
         </div>
       </div>
     </div>
@@ -804,6 +875,7 @@ window.onload = function() {
   const hoy = new Date().toISOString().split('T')[0];
   document.getElementById('fechaUniforme').value = hoy;
   document.getElementById('fechaEquipos').value = hoy;
+  document.getElementById('fechaRecepcionEquipos').value = hoy;
   document.getElementById('fechaVehiculo').value = hoy;
   // Los datos se cargan solo después del login exitoso
 };
@@ -909,7 +981,7 @@ function cargarArchivos() {
 // SELECTS
 // =========================
 function llenarSelectsRUT() {
-  const selects = ["rutUniforme", "rutEquipos", "rutVehiculo"];
+  const selects = ["rutUniforme", "rutEquipos", "rutRecepcionEquipos", "rutVehiculo"];
 
   selects.forEach(id => {
     const sel = document.getElementById(id);
@@ -973,6 +1045,26 @@ function llenarSelectPatentes() {
     const rut = document.getElementById("rutEquipos").value.trim();
     const persona = buscarPersonal(rut);
     const div = document.getElementById("resultadoEquipos");
+    if (persona) {
+      div.classList.remove("hidden");
+      div.innerHTML = `
+        <h3>Trabajador Encontrado</h3>
+        <p><strong>Nombre:</strong> ${obtenerNombre(persona)}</p>
+        <p><strong>Cargo:</strong> ${obtenerCargo(persona)}</p>
+        <p><strong>RUT:</strong> ${formatearRUT(obtenerRUT(persona))}</p>
+      `;
+    } else if (rut) {
+      div.classList.remove("hidden");
+      div.innerHTML = `<h3>No encontrado</h3><p>Selecciona desde la lista.</p>`;
+    } else {
+      div.classList.add("hidden");
+    }
+  }
+
+  function buscarPersonalRecepcionEquipos() {
+    const rut = document.getElementById("rutRecepcionEquipos").value.trim();
+    const persona = buscarPersonal(rut);
+    const div = document.getElementById("resultadoRecepcionEquipos");
     if (persona) {
       div.classList.remove("hidden");
       div.innerHTML = `
@@ -1101,6 +1193,25 @@ function llenarSelectPatentes() {
 
   function eliminarFilaEquipos(btn) {
     const tbody = document.getElementById("tableEquipos");
+    if (tbody.rows.length > 1) {
+        btn.closest("tr").remove();
+    } else {
+        alert("Debe haber al menos una fila.");
+    }
+  }
+
+  function agregarFilaRecepcionEquipos() {
+    const tbody = document.getElementById("tableRecepcionEquipos");
+    const base = tbody.rows[0].cloneNode(true);
+    base.querySelectorAll("input, select").forEach(el => {
+      if (el.tagName === "SELECT") el.value = "";
+      if (el.type === "text") el.value = "";
+    });
+    tbody.appendChild(base);
+  }
+
+  function eliminarFilaRecepcionEquipos(btn) {
+    const tbody = document.getElementById("tableRecepcionEquipos");
     if (tbody.rows.length > 1) {
         btn.closest("tr").remove();
     } else {
@@ -1275,6 +1386,62 @@ style="position: absolute; top: 10px; right: 10px; width: 150px; height: auto; z
         <p class="firma-label">Firma del Trabajador</p>
         <p class="firma-nombre">${nombre}</p>
         <p class="firma-rut">RUT ${rutFmt}</p>
+      </div>
+    `;
+  }
+
+  function generarHTMLRecepcionEquipos(persona, fecha, equiposHTML, observaciones) {
+    const nombre = obtenerNombre(persona);
+    const cargo = obtenerCargo(persona);
+    const rutFmt = formatearRUT(obtenerRUT(persona));
+    const fechaTxt = formatearFecha(fecha) || formatearFecha(new Date().toISOString().split("T")[0]);
+
+    const obsHTML = observaciones ? `
+      <div style="margin-top: 10px; margin-bottom: 18px; padding: 12px 14px; border: 1.5px solid #888; border-radius: 4px; background: #fafafa; page-break-inside: avoid; break-inside: avoid;">
+        <p style="font-weight: bold; text-decoration: underline; margin-bottom: 6px;">Observaciones:</p>
+        <p style="white-space: pre-wrap; text-align: justify;">${observaciones.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+      </div>
+    ` : '';
+
+    return `
+      ${PDF_CSS_BASE}
+      <div class="acta-contenedor">
+        <img src=data:image/jpeg;base64,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
+style="position: absolute; top: 10px; right: 10px; width: 150px; height: auto; z-index: 100;" />
+        <div style="text-align: center; width: 100%; clear: both; padding-top: 20px;">
+<br>
+    <h2 style="text-align: center !important; font-weight: bold !important; font-size: 16pt !important; margin: 30px 0 28px 0 !important; width: 100%; display: block; clear: both;">
+    ACTA RECEPCIÓN DE EQUIPOS DE TRABAJO
+</h2>
+
+
+        <p>En Santiago a ${fechaTxt}, mediante el presente documento, se deja constancia que <strong>TOOLTEK SpA</strong> ha recibido de parte de <strong>${nombre}</strong>, cédula de identidad N. <strong>${rutFmt}</strong>, quien desempeña el cargo de <strong>${cargo}</strong>, la devolución de los siguientes equipos de trabajo que le fueron asignados:</p>
+
+        ${equiposHTML}
+
+        ${obsHTML}
+
+        <p>La empresa declara recibir los equipos individualizados precedentemente, dejando constancia del estado en que se encuentran al momento de la recepción conforme a las observaciones señaladas, si las hubiere.</p>
+        <p>Con la presente recepción, el trabajador queda liberado de la responsabilidad de custodia, uso y conservación de los equipos mencionados en este documento.</p>
+      </div>
+<br>
+<br>
+      <div class="firma-section">
+        <table style="width:100%; border-collapse:collapse; page-break-inside:avoid;">
+          <tr>
+            <td style="width:50%; text-align:center; padding:0 30px; border:none;">
+              <div style="border-top:1.5px solid #000; width:220px; margin:0 auto 6px;"></div>
+              <p class="firma-label" style="text-align:center;">Firma del Trabajador</p>
+              <p class="firma-nombre" style="text-align:center;">${nombre}</p>
+              <p class="firma-rut" style="text-align:center;">RUT ${rutFmt}</p>
+            </td>
+            <td style="width:50%; text-align:center; padding:0 30px; border:none;">
+              <div style="border-top:1.5px solid #000; width:220px; margin:0 auto 6px;"></div>
+              <p class="firma-label" style="text-align:center;">Firma Receptor</p>
+              <p class="firma-nombre" style="text-align:center;">pp. TOOLTEK SpA</p>
+            </td>
+          </tr>
+        </table>
       </div>
     `;
   }
@@ -1637,6 +1804,50 @@ style="position: absolute; top: 10px; right: 10px; width: 150px; height: auto; z
     document.getElementById("previewBody").innerHTML = `<div style="background:white; padding:0;">${html}</div>`;
     document.getElementById("previewModal").classList.add("show");
     currentPreviewType = "equipos";
+  }
+
+  function previewRecepcionEquipos() {
+    const rut = document.getElementById("rutRecepcionEquipos").value.trim();
+    const persona = buscarPersonal(rut);
+    if (!persona) { alert("Por favor selecciona un trabajador de la lista."); return; }
+
+    const fecha = document.getElementById("fechaRecepcionEquipos").value;
+    const rows = document.querySelectorAll("#tableRecepcionEquipos tr");
+
+    let equiposHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th style="width:35%; text-align:center;vertical-align: middle;">Tipo de Equipo</th>
+            <th style="width:65%;text-align: center; vertical-align: middle;">Serie / Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let tieneEquipos = false;
+    rows.forEach(row => {
+      const tipo = row.cells[0].querySelector("select").value;
+      const serie = row.cells[1].querySelector("input").value;
+      if (tipo && serie) {
+        equiposHTML += `<tr><td>${tipo}</td><td>${serie}</td></tr>`;
+        tieneEquipos = true;
+      }
+    });
+
+    equiposHTML += `</tbody></table>`;
+
+    if (!tieneEquipos) {
+      alert("Agrega al menos un equipo con tipo y serie/detalle.");
+      return;
+    }
+
+    const observaciones = (document.getElementById("observacionesRecepcionEquipos").value || "").trim();
+
+    const html = generarHTMLRecepcionEquipos(persona, fecha, equiposHTML, observaciones);
+    document.getElementById("previewBody").innerHTML = `<div style="background:white; padding:0;">${html}</div>`;
+    document.getElementById("previewModal").classList.add("show");
+    currentPreviewType = "recepcion_equipos";
   }
 
   function previewVehiculo() {
