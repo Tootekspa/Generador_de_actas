@@ -1978,20 +1978,62 @@ function formatearRUT(rut) {
 }
 
 // Pasa la fecha a texto (ej: 15 de abril de 2026)
+// Interpreta: números como fecha serial de Excel, "aaaa-mm-dd" (input type=date)
+// y "dd/mm/aaaa" o "dd-mm-aaaa" (formato chileno, como vienen del Excel) sin
+// dejar que Date() los confunda con el formato mm/dd/aaaa de EE.UU.
 function formatearFecha(fechaStr) {
-  if (!fechaStr) return "";
+  if (fechaStr === null || fechaStr === undefined || fechaStr === "") return "";
   const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-  
-  if (typeof fechaStr === "string") {
-    let partes = fechaStr.split("-");
-    if (partes.length === 3) {
-      return `${parseInt(partes[2], 10)} de ${meses[parseInt(partes[1], 10) - 1]} de ${partes[0]}`;
+
+  let dia, mes, anio;
+
+  if (typeof fechaStr === "number" && isFinite(fechaStr)) {
+    // Fecha serial de Excel (días desde 1899-12-30)
+    const utcDays = Math.floor(fechaStr - 25569);
+    const utcMs = utcDays * 86400 * 1000;
+    const d = new Date(utcMs);
+    dia = d.getUTCDate();
+    mes = d.getUTCMonth();
+    anio = d.getUTCFullYear();
+  } else if (fechaStr instanceof Date) {
+    dia = fechaStr.getDate();
+    mes = fechaStr.getMonth();
+    anio = fechaStr.getFullYear();
+  } else if (typeof fechaStr === "string") {
+    const s = fechaStr.trim();
+    const sep = s.includes("/") ? "/" : (s.includes("-") ? "-" : null);
+    if (sep) {
+      const partes = s.split(sep).map(p => p.trim());
+      if (partes.length === 3 && partes.every(p => /^\d+$/.test(p))) {
+        if (partes[0].length === 4) {
+          // aaaa-mm-dd / aaaa/mm/dd (p.ej. input type="date")
+          anio = parseInt(partes[0], 10);
+          mes = parseInt(partes[1], 10) - 1;
+          dia = parseInt(partes[2], 10);
+        } else {
+          // dd-mm-aaaa / dd/mm/aaaa (formato chileno del Excel)
+          dia = parseInt(partes[0], 10);
+          mes = parseInt(partes[1], 10) - 1;
+          anio = parseInt(partes[2], 10);
+          if (anio < 100) anio += anio < 50 ? 2000 : 1900;
+        }
+      }
+    }
+    if (dia === undefined) {
+      const f = new Date(s);
+      if (!isNaN(f.getTime())) {
+        dia = f.getDate();
+        mes = f.getMonth();
+        anio = f.getFullYear();
+      }
     }
   }
-  
-  let f = new Date(fechaStr);
-  if (isNaN(f.getTime())) return String(fechaStr);
-  return `${f.getDate()} de ${meses[f.getMonth()]} de ${f.getFullYear()}`;
+
+  if (dia === undefined || mes === undefined || anio === undefined ||
+      isNaN(dia) || isNaN(mes) || isNaN(anio)) {
+    return String(fechaStr);
+  }
+  return `${dia} de ${meses[mes]} de ${anio}`;
 }
     
 
